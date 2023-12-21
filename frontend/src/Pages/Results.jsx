@@ -1,35 +1,43 @@
-import React, { useEffect, useState } from 'react'
-import axios from 'axios'
-
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 
 function Results() {
-
-    const [students, setStudents] = useState([])
-    const [selectedStudent, setSelectedStudent] = useState('')
-    const [result, seResult] = useState({})
+    const [students, setStudents] = useState([]);
+    const [selectedStudent, setSelectedStudent] = useState('');
+    const [result, setResult] = useState({});
 
     const fetchStudents = async () => {
-        const response = await axios.get('http://localhost:4000/students')
-        setStudents(response.data)
-    }
+        try {
+            const response = await axios.get('http://localhost:4000/students?result=true');
+            setStudents(response.data);
+        } catch (error) {
+            console.error('Error fetching students:', error);
+            alert('Something went wrong while fetching students.');
+        }
+    };
 
     const fetchResult = async () => {
-        if (!selectedStudent) return
-        const formattedResult = await axios.get('http://localhost:4000/results/formatted/students/' + selectedStudent)
-        seResult(formattedResult.data)
-    }
+        try {
+            if (!selectedStudent) return;
+            const formattedResult = await axios.get(`http://localhost:4000/results/formatted/students/${selectedStudent}`);
+            setResult(formattedResult.data);
+        } catch (error) {
+            console.error('Error fetching result:', error);
+            alert('Something went wrong while fetching the result.');
+        }
+    };
 
     const handleStudentChange = (event) => {
-        setSelectedStudent(event.target.value)
-    }
+        setSelectedStudent(event.target.value);
+    };
 
     useEffect(() => {
-        fetchStudents()
-    }, [])
+        fetchStudents();
+    }, []);
 
     useEffect(() => {
-        fetchResult()
-    }, [selectedStudent])
+        fetchResult();
+    }, [selectedStudent]);
 
     return (
         <div className="mt-12 text-5xl text-center">
@@ -42,7 +50,7 @@ function Results() {
                             <select className='mt-4 text-xl' name="students" id="students" onChange={handleStudentChange} value={selectedStudent}>
                                 <option value="" disabled selected>Select an option</option>
                                 {students && students.map(student => (
-                                    <option value={student._id}>{student.firstName} {student.lastName}</option>
+                                    <option key={student._id} value={student._id}>{student.firstName} {student.lastName}</option>
                                 ))}
                             </select>
                         </div>
@@ -84,7 +92,6 @@ function Results() {
                                                 <td className="px-6 py-4 whitespace-nowrap">{data.credit}</td>
                                                 <td className="px-6 py-4 whitespace-nowrap">{data.marks}</td>
                                                 <td className="px-6 py-4 whitespace-nowrap">{data.maximumMarks}</td>
-
                                             </tr>
                                         ))}
                                     </tbody>
@@ -94,9 +101,8 @@ function Results() {
                     </div>
                 </div>
             )}
-
         </div>
-    )
+    );
 }
 
-export default Results
+export default Results;

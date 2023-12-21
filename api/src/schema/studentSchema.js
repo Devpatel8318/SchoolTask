@@ -23,6 +23,9 @@ const studentSchema = {
             bsonType: 'string',
             minLength: 6,
         },
+        result: {
+            bsonType: 'objectId',
+        },
     },
     additionalProperties: false,
 }

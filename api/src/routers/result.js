@@ -1,5 +1,6 @@
 const express = require('express')
 const validId = require('../middleware/validId')
+const { ObjectId } = require('mongodb')
 const router = new express.Router()
 
 const pipeline = (argument) => [
@@ -43,7 +44,6 @@ const pipeline = (argument) => [
         },
     },
 ]
-
 const transformDoc = (resultDoc) => {
     return {
         _id: resultDoc[0]._id,
@@ -146,6 +146,20 @@ const routes = (db) => {
                     .status(500)
                     .send({ error: 'Failed to create Result' })
             }
+
+            const updatedStudent = await db
+                .collection('students')
+                .updateOne(
+                    { _id: new ObjectId(req.body.Student) },
+                    { $set: { result: resultDoc.insertedId } }
+                )
+
+            if (!updatedStudent) {
+                return res
+                    .status(500)
+                    .send({ error: 'Failed to update Student' })
+            }
+
             res.status(201).send(resultDoc.insertedId)
         } catch (err) {
             if (err.code === 11000) {
@@ -178,16 +192,41 @@ const routes = (db) => {
     // Delete Result
     router.delete('/results/:id', validId, async (req, res) => {
         try {
-            const resultDoc = await db
-                .collection('results')
-                .deleteOne({ _id: req.params.id })
+            const resultId = req.params.id
 
-            if (resultDoc.deletedCount === 0) {
+            // Check if the result exists
+            const foundDoc = await db
+                .collection('results')
+                .findOne({ _id: resultId })
+            if (!foundDoc) {
                 return res.status(404).json({ error: 'Result not found' })
             }
-            res.status(200).send({ message: 'Result deleted successfully' })
+
+            // Delete the result
+            const deleteResult = await db
+                .collection('results')
+                .deleteOne({ _id: resultId })
+            if (deleteResult.deletedCount === 0) {
+                return res.status(404).json({ error: 'Result not Deleted' })
+            }
+
+            // Update the student to remove reference to this result
+            const updatedStudent = await db
+                .collection('students')
+                .updateOne(
+                    { _id: new ObjectId(foundDoc.Student) },
+                    { $unset: { result: '' } }
+                )
+
+            if (updatedStudent.modifiedCount === 0) {
+                return res
+                    .status(500)
+                    .json({ error: 'Failed to update Student' })
+            }
+
+            res.status(200).json({ message: 'Result deleted successfully' })
         } catch (err) {
-            res.status(500).send({ error: 'Internal server error' })
+            res.status(500).json({ error: 'Internal server error' })
         }
     })
 

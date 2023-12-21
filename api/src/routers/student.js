@@ -2,6 +2,7 @@ const express = require('express')
 const router = new express.Router()
 const crypto = require('crypto')
 const validId = require('../middleware/validId')
+const { log } = require('console')
 
 const passwordEncryption = (password) => {
     const pattern =
@@ -14,9 +15,18 @@ const routes = (db) => {
     // Get all students
     router.get('/students', async (req, res) => {
         try {
+            let filter = {}
+
+            if (req.query.result === 'false') {
+                filter = { result: { $exists: false } }
+            }
+            if (req.query.result === 'true') {
+                filter = { result: { $exists: true } }
+            }
+
             const students = await db
                 .collection('students')
-                .find({})
+                .find(filter)
                 .project({ password: 0 })
                 .toArray()
             res.status(200).send(students)

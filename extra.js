@@ -313,3 +313,63 @@ db.results.aggregate([
         },
     },
 ])
+
+db.students.aggregate([
+    {
+        $match: {
+            Student: '65826fca2577dacea9143152',
+        },
+    },
+    {
+        $addFields: {
+            convertedStudentId: { $toObjectId: '$Student' },
+        },
+    },
+    {
+        $lookup: {
+            from: 'students',
+            localField: 'convertedStudentId',
+            foreignField: '_id',
+            as: 'studentInfo',
+        },
+    },
+    {
+        $unwind: '$studentInfo',
+    },
+    {
+        $lookup: {
+            from: 'subjects',
+            localField: 'Marks.sub_code',
+            foreignField: '_id',
+            as: 'subjectInfo',
+        },
+    },
+    {
+        $project: {
+            _id: 1,
+            Signed_By: 1,
+            Marks: 1,
+            'studentInfo._id': 1,
+            'studentInfo.firstName': 1,
+            'studentInfo.lastName': 1,
+            'studentInfo.email': 1,
+            subjectInfo: 1,
+        },
+    },
+])
+
+db.results.aggregate([
+    {
+        $addFields: {
+            convertedStudentId: { $toObjectId: '$Student' },
+        },
+    },
+    {
+        $lookup: {
+            from: 'students',
+            localField: 'convertedStudentId',
+            foreignField: '_id',
+            as: 'studentInfo',
+        },
+    },
+])
