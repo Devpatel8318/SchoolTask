@@ -29,7 +29,8 @@ const routes = (db) => {
                 .find(filter)
                 .project({ password: 0 })
                 .toArray()
-            res.status(200).send(students)
+
+            return res.status(200).send(students)
         } catch (err) {
             res.status(500).send({ error: err })
         }
@@ -48,7 +49,7 @@ const routes = (db) => {
             if (!studentDoc)
                 return res.status(404).json({ error: 'Student not found' })
 
-            res.status(200).send(studentDoc)
+            return res.status(200).send(studentDoc)
         } catch (err) {
             res.status(500).send({ error: 'Internal server error' })
         }
@@ -72,7 +73,7 @@ const routes = (db) => {
                 return res.status(401).send({ error: 'Wrong password' })
 
             delete student.password
-            res.status(200).send(student)
+            return res.status(200).send(student)
         } catch (err) {
             res.status(500).send({ error: 'Internal server error' })
         }
@@ -109,9 +110,9 @@ const routes = (db) => {
             return res.status(201).send(studentDoc.insertedId)
         } catch (err) {
             if (err.code === 11000) {
-                res.status(409).send({ error: 'Email already exists' })
+                return res.status(409).send({ error: 'Email already exists' })
             }
-            res.status(400).send(err.errInfo)
+            return res.status(400).send(err.errInfo)
             // const errors = []
             // err.errInfo.details.schemaRulesNotSatisfied[0].propertiesNotSatisfied.forEach((error) => {
             //     errors.push({ error: error.propertyName, message: error.details });
@@ -139,16 +140,40 @@ const routes = (db) => {
         }
     })
 
-    // ! Delete a student
+    // Delete a student
     router.delete('/students/:id', validId, async (req, res) => {
         try {
+            const studentId = req.params.id
+            // Check if student Exists
+            const foundStudentDoc = await db
+                .collection('students')
+                .findOne({ _id: studentId }, { projection: { password: 0 } })
+
+            if (!foundStudentDoc)
+                return res.status(404).json({ error: 'Student not found' })
+
+            // Delete the result
             const studentDoc = await db
                 .collection('students')
-                .deleteOne({ _id: req.params.id })
+                .deleteOne({ _id: studentId })
 
             if (studentDoc.deletedCount === 0) {
                 return res.status(404).json({ error: 'Student not found' })
             }
+
+            // Delete corresponding result
+            if (foundStudentDoc.result) {
+                const deleteResult = await db
+                    .collection('results')
+                    .deleteOne({ _id: foundStudentDoc.result })
+
+                if (deleteResult.deletedCount === 0) {
+                    return res
+                        .status(404)
+                        .json({ error: 'Result of student not deleted' })
+                }
+            }
+
             res.status(200).send({ message: 'student deleted successfully' })
         } catch (err) {
             res.status(500).send({ error: 'Internal server error' })

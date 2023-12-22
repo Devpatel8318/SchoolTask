@@ -155,6 +155,8 @@ const routes = (db) => {
                 )
 
             if (!updatedStudent) {
+                await db.collection('result').deleteOne(req.body)
+
                 return res
                     .status(500)
                     .send({ error: 'Failed to update Student' })
@@ -173,31 +175,28 @@ const routes = (db) => {
     router.patch('/results/:id', validId, async (req, res) => {
         const updates = req.body
 
-        if (req.body.Student)
-            try {
-                const updatedResult = await db
-                    .collection('results')
-                    .updateOne({ _id: req.params.id }, { $set: updates })
+        try {
+            const updatedResult = await db
+                .collection('results')
+                .updateOne({ _id: req.params.id }, { $set: updates })
 
-                if (updatedResult.matchedCount === 0) {
-                    return res.status(404).json({ error: 'Result not found' })
-                }
-
-                res.status(200).json({ message: 'Result updated successfully' })
-            } catch (err) {
-                res.status(400).send(err.errInfo || err)
+            if (updatedResult.matchedCount === 0) {
+                return res.status(404).json({ error: 'Result not found' })
             }
+
+            res.status(200).json({ message: 'Result updated successfully' })
+        } catch (err) {
+            res.status(400).send(err.errInfo || err)
+        }
     })
 
     // Delete Result
     router.delete('/results/:id', validId, async (req, res) => {
         try {
-            const resultId = req.params.id
-
             // Check if the result exists
             const foundDoc = await db
                 .collection('results')
-                .findOne({ _id: resultId })
+                .findOne({ _id: req.params.id })
             if (!foundDoc) {
                 return res.status(404).json({ error: 'Result not found' })
             }
@@ -205,12 +204,12 @@ const routes = (db) => {
             // Delete the result
             const deleteResult = await db
                 .collection('results')
-                .deleteOne({ _id: resultId })
+                .deleteOne({ _id: req.params.id })
             if (deleteResult.deletedCount === 0) {
                 return res.status(404).json({ error: 'Result not Deleted' })
             }
 
-            // Update the student to remove reference to this result
+            // Updating the student to remove reference to this result
             const updatedStudent = await db
                 .collection('students')
                 .updateOne(

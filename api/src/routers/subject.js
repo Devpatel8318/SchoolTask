@@ -6,9 +6,9 @@ const routes = (db) => {
     router.get('/subjects', async (req, res) => {
         try {
             const subjects = await db.collection('subjects').find().toArray()
-            res.status(200).send(subjects)
+            return res.status(200).send(subjects)
         } catch (err) {
-            res.status(500).send({ error: err })
+            return res.status(500).send({ error: err })
         }
     })
 
